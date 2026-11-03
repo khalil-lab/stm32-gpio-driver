@@ -32,4 +32,5 @@ int GPIO_Configure(gpio_port_t GPIO,uint8_t pin,gpio_mode_t mode)
 int enable_RCCAHB1(gpio_port_t GPIOx)
 {
 	RCC_AHB1ENR |=(1U<<(uint32_t)GPIOx);
+	return 0 ;
 }
