@@ -1,48 +1,73 @@
-# 1- variables
+# 1 - Variables
 
-cc = arm-none-eabi-gcc 
-OBJCOPY = arm-none-eabi-objcopy
-TARGET = firmware
-BUILD_DIR = build
-LINKER_SCRIPT = $(wildcard *.ld)
+CC              = arm-none-eabi-gcc
+OBJCOPY         = arm-none-eabi-objcopy
+SIZE            = arm-none-eabi-size
 
-#2- cpu and compiler flags
-CPU = -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
-CCFLAGS = $(CPU) -std=c11 -Wall -Wextra -g -O0 -IInc 
-LDFLAGS = $(CPU) -T $(LINKER_SCRIPT)
+TARGET          = firmware
+BUILD_DIR       = build
+LINKER_SCRIPT   = $(wildcard *.ld)
 
 
+# 2 - CPU and compiler flags
 
-#3 - source files
-C_SOURCES =$(wildcard Src/*.c)
-ASM_SOURCES = Startup/startup_stm32f407xx.s 
+CPU             = -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+
+CCFLAGS         = $(CPU) -std=c11 -Wall -Wextra -g -O0 -IInc
+ASFLAGS         = $(CPU) -g
+LDFLAGS         = $(CPU) -T$(LINKER_SCRIPT) -Wl,--gc-sections -Wl,-Map=$(BUILD_DIR)/$(TARGET).map
+LDFLAGS         += -specs=nosys.specs
 
 
-#4- object files
+# 3 - Source files
+
+C_SOURCES       = $(wildcard Src/*.c)
+ASM_SOURCES     = $(wildcard Startup/*.s	)
 
 
+# 4 - Object files
+
+C_OBJECTS       = $(patsubst Src/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
+ASM_OBJECTS     = $(patsubst Startup/%.s,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
+OBJECTS         = $(C_OBJECTS) $(ASM_OBJECTS)
 
 
-#5 -build targets 
+# 5 - Build targets
+
 all: $(BUILD_DIR)/$(TARGET).bin
 
 
+# 6 - C compilation
 
-#6- Compilation 
-
-
-
-
-#7 assembly 
+$(BUILD_DIR)/%.o: Src/%.c
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(CCFLAGS) -ffunction-sections -fdata-sections -c $< -o $@
 
 
-#8- link
+# 7 - Assembly
+
+$(BUILD_DIR)/%.o: Startup/%.s
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(ASFLAGS) -c $< -o $@
 
 
-#9- Binary conversion
+# 8 - Linking
+
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) $(LINKER_SCRIPT)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	$(SIZE) $@
 
 
-#10 - clean
+# 9 - Binary conversion
+
+$(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
+	$(OBJCOPY) -O binary $< $@
 
 
+# 10 - Clean
 
+clean:
+	rm -rf $(BUILD_DIR)
+
+
+.PHONY: all clean

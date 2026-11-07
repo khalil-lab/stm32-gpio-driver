@@ -1,7 +1,33 @@
-#include gpio.h
-#include stdio.h
+#include <gpio.h>
+#include <gpio_private.h>
+#include <stdio.h>
 
 
+
+static gpio_port_reg_t * GPIO_GetPort(gpio_port_t port);
+
+static void enable_RCCAHB1(gpio_port_t GPIOx);
+
+static void gpio_reg_write_pin(gpio_port_t port,
+                               uint8_t pin,
+                               pin_state_t state) ;
+
+
+static gpio_mode_t checkPinMode(gpio_port_t gpio , uint8_t pin );
+
+
+static gpio_status_t gpio_reg_configure(const pin_config_t *config);
+
+
+
+static gpio_status_t verify_gpio_pointer (gpio_port_t gpio) ;
+
+static uint32_t gpio_reg_read_pin (gpio_port_t gpio , uint8_t pin) ;
+
+
+static void gpio_reg_write_pin(gpio_port_t port,
+                               uint8_t pin,
+                               pin_state_t state) ;
 
 
 
@@ -47,7 +73,7 @@ gpio_status_t GPIO_Configure(
         return GPIO_ERROR_INVALID_MODE;
 
     /* Validate alternate function when applicable */
-    if ((mode == GPIO_MODE_AF) && (af > GPIO_AF15))
+    if ((mode == GPIO_MODE_AF) && (af > AF15))
         return GPIO_ERROR_INVALID_AF;
 
     /* Validate output type */
@@ -167,7 +193,7 @@ static gpio_status_t verify_gpio_pointer (gpio_port_t gpio)
 }
 static uint32_t gpio_reg_read_pin (gpio_port_t gpio , uint8_t pin)
 		{
-
+			gpio_port_reg_t *GPIOx = GPIO_GetPort(gpio);
 			return (uint32_t)((GPIOx->IDR)>>pin)&1u ;
 		}
 
@@ -207,7 +233,7 @@ static void gpio_reg_write_pin(gpio_port_t port,
 
 
 
-static gpio_mode_t checkPinMode(gpio_port__t gpio , uint8_t pin )
+static gpio_mode_t checkPinMode(gpio_port_t gpio , uint8_t pin )
 {
 			gpio_port_reg_t *GPIOx = GPIO_GetPort(gpio);
 			uint32_t mode=(GPIOx->MODER>>(2u*pin)) & 3u ;
